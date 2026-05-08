@@ -5,6 +5,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>School Management Portal</title>
 
+  <!-- jsPDF -->
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
   <style>
 
     *{
@@ -137,14 +141,11 @@
       box-shadow:0 2px 10px rgba(0,0,0,0.1);
     }
 
-    .topbar h1{
-      color:#1e293b;
-    }
-
     .welcome-box,
     .admission-form,
     .students-section,
-    .profile-box{
+    .profile-box,
+    .tc-section{
       margin-top:25px;
       background:white;
       padding:30px;
@@ -154,11 +155,10 @@
 
     .admission-form,
     .students-section,
-    .profile-box{
+    .profile-box,
+    .tc-section{
       display:none;
     }
-
-    /* FORM */
 
     .form-grid{
       display:grid;
@@ -198,8 +198,6 @@
       font-size:16px;
     }
 
-    /* STUDENT TABLE */
-
     table{
       width:100%;
       border-collapse:collapse;
@@ -217,8 +215,6 @@
       text-align:center;
     }
 
-    /* ACTION MENU */
-
     .action-menu{
       position:relative;
       display:inline-block;
@@ -229,7 +225,6 @@
       border:none;
       font-size:24px;
       cursor:pointer;
-      padding:5px 10px;
     }
 
     .dropdown{
@@ -238,7 +233,7 @@
       right:0;
       top:35px;
       background:white;
-      min-width:130px;
+      min-width:140px;
       box-shadow:0 5px 15px rgba(0,0,0,0.2);
       border-radius:8px;
       overflow:hidden;
@@ -258,11 +253,13 @@
       background:#f1f5f9;
     }
 
-    /* PROFILE */
+    .student-id{
+      color:#16a34a;
+      font-weight:bold;
+    }
 
     .profile-box p{
       margin-bottom:10px;
-      font-size:16px;
     }
 
   </style>
@@ -270,7 +267,7 @@
 
 <body>
 
-  <!-- LOGIN PAGE -->
+  <!-- LOGIN -->
 
   <div class="login-page" id="loginPage">
 
@@ -322,6 +319,8 @@
 
         <li onclick="openAdmission()">📝 Admission</li>
 
+        <li onclick="openTCSection()">📄 Issue TC</li>
+
         <li>👨‍🏫 Teachers</li>
 
         <li>💰 Fees</li>
@@ -329,8 +328,6 @@
         <li>📚 Classes</li>
 
         <li>📅 Attendance</li>
-
-        <li>📄 Results</li>
 
         <li>⚙️ Settings</li>
 
@@ -354,7 +351,7 @@
 
         <h2>Welcome To School Management Portal</h2>
 
-        <p>Manage Students & Admission Easily</p>
+        <p>Manage Students, Admission & TC Easily</p>
 
       </div>
 
@@ -423,7 +420,7 @@
           <thead>
 
             <tr>
-              <th>ID</th>
+              <th>Unique ID</th>
               <th>Name</th>
               <th>Class</th>
               <th>Mobile</th>
@@ -446,6 +443,8 @@
 
         <h2>🎓 Student Profile</h2>
 
+        <p><strong>Unique ID:</strong> <span id="pId"></span></p>
+
         <p><strong>Name:</strong> <span id="pName"></span></p>
 
         <p><strong>Father:</strong> <span id="pFather"></span></p>
@@ -458,6 +457,23 @@
 
       </div>
 
+      <!-- TC -->
+
+      <div class="tc-section" id="tcSection">
+
+        <h2>📄 Issue Transfer Certificate (TC)</h2>
+
+        <div class="form-group" style="margin-top:20px;">
+          <label>Enter Student Unique ID</label>
+          <input type="text" id="tcStudentId" placeholder="Example: STU1001">
+        </div>
+
+        <button class="submit-btn" onclick="issueTC()">
+          Issue TC & Download PDF
+        </button>
+
+      </div>
+
     </div>
 
   </div>
@@ -465,6 +481,8 @@
   <script>
 
     let students = [];
+
+    let studentCounter = 1001;
 
     function login(){
 
@@ -504,6 +522,8 @@
 
       document.getElementById("profileBox").style.display = "none";
 
+      document.getElementById("tcSection").style.display = "none";
+
     }
 
     function showDashboard(){
@@ -530,25 +550,35 @@
 
     }
 
+    function openTCSection(){
+
+      hideAll();
+
+      document.getElementById("tcSection").style.display = "block";
+
+    }
+
     function submitAdmission(){
 
       let student = {
 
-        id: students.length + 1,
+        uniqueId : "STU" + studentCounter,
 
-        name: document.getElementById("studentName").value,
+        name : document.getElementById("studentName").value,
 
-        father: document.getElementById("fatherName").value,
+        father : document.getElementById("fatherName").value,
 
-        className: document.getElementById("studentClass").value,
+        className : document.getElementById("studentClass").value,
 
-        mobile: document.getElementById("mobile").value,
+        mobile : document.getElementById("mobile").value,
 
-        address: document.getElementById("address").value
+        address : document.getElementById("address").value
 
       };
 
       students.push(student);
+
+      studentCounter++;
 
       updateStudentTable();
 
@@ -576,7 +606,7 @@
 
           <tr>
 
-            <td>${student.id}</td>
+            <td class="student-id">${student.uniqueId}</td>
 
             <td>${student.name}</td>
 
@@ -632,15 +662,8 @@
 
       });
 
-      if(dropdown.style.display === "block"){
-
-        dropdown.style.display = "none";
-
-      }else{
-
-        dropdown.style.display = "block";
-
-      }
+      dropdown.style.display =
+      dropdown.style.display === "block" ? "none" : "block";
 
     }
 
@@ -651,6 +674,8 @@
       document.getElementById("profileBox").style.display = "block";
 
       let student = students[index];
+
+      document.getElementById("pId").innerText = student.uniqueId;
 
       document.getElementById("pName").innerText = student.name;
 
@@ -683,6 +708,76 @@
       students.splice(index,1);
 
       updateStudentTable();
+
+    }
+
+    function issueTC(){
+
+      let tcId = document.getElementById("tcStudentId").value;
+
+      let studentIndex = students.findIndex(student =>
+        student.uniqueId === tcId
+      );
+
+      if(studentIndex !== -1){
+
+        let student = students[studentIndex];
+
+        students.splice(studentIndex,1);
+
+        updateStudentTable();
+
+        generateTCPDF(student);
+
+        alert("TC Issued Successfully");
+
+        document.getElementById("tcStudentId").value = "";
+
+      }else{
+
+        alert("Student ID Not Found");
+
+      }
+
+    }
+
+    function generateTCPDF(student){
+
+      const { jsPDF } = window.jspdf;
+
+      let doc = new jsPDF();
+
+      doc.setFontSize(22);
+
+      doc.text("TRANSFER CERTIFICATE", 55, 25);
+
+      doc.setFontSize(14);
+
+      doc.text("School Management Portal", 70, 35);
+
+      doc.line(20,40,190,40);
+
+      doc.setFontSize(13);
+
+      doc.text("Student Unique ID : " + student.uniqueId, 20, 60);
+
+      doc.text("Student Name : " + student.name, 20, 75);
+
+      doc.text("Father Name : " + student.father, 20, 90);
+
+      doc.text("Class : " + student.className, 20, 105);
+
+      doc.text("Mobile : " + student.mobile, 20, 120);
+
+      doc.text("Address : " + student.address, 20, 135);
+
+      doc.text("TC Status : Approved", 20, 160);
+
+      doc.text("Date : " + new Date().toLocaleDateString(), 20, 175);
+
+      doc.text("Principal Signature", 140, 250);
+
+      doc.save(student.name + "_TC.pdf");
 
     }
 
